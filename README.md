@@ -1,6 +1,8 @@
 # Study-App
 Create quizes from pdfs
 
-# Deployed Linke
+# Deployed Link
 
-https://study-app-lime.vercel.app/
+https://jambaya-quiz-generator.netlify.app/
+-> Netlify for deploying frontend
+-> Render for deploying backend
