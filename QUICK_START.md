@@ -1,0 +1,74 @@
+# Quick Start Guide - Study App
+
+## Step 1: Verify Your Setup
+
+Make sure you're in the project directory:
+```powershell
+cd C:\Users\steve\Desktop\Study_App
+```
+
+## Step 2: Check Your API Key
+
+Your `.env` file should be in the `server` folder with your Gemini API key:
+```
+GEMINI_API_KEY=AIzaSyAYKsy5-et6bJj1GgtoA_jmCsTVBNvvr78
+PORT=5000
+```
+
+## Step 3: Run the App
+
+You have **two options**:
+
+### Option A: Run Both Together (Easiest)
+Open **ONE** terminal/PowerShell window and run:
+```powershell
+npm run dev
+```
+
+This will start both the backend (server) and frontend (client) at the same time.
+
+### Option B: Run Separately (If Option A doesn't work)
+Open **TWO** terminal/PowerShell windows:
+
+**Terminal 1 - Backend Server:**
+```powershell
+cd C:\Users\steve\Desktop\Study_App
+npm run server
+```
+
+**Terminal 2 - Frontend Client:**
+```powershell
+cd C:\Users\steve\Desktop\Study_App
+npm run client
+```
+
+## Step 4: Open the App
+
+Once running, open your web browser and go to:
+- **http://localhost:3000**
+
+The backend will be running on **http://localhost:5000** (you don't need to open this directly).
+
+## Troubleshooting
+
+### If you see "port already in use" errors:
+- Close any other apps using ports 3000 or 5000
+- Or change the ports in the configuration files
+
+### If the frontend can't connect to the backend:
+- Make sure the backend is running (check Terminal 1)
+- Check that the server shows "Server running on port 5000"
+
+### If you see API key errors:
+- Make sure `server/.env` exists and has your Gemini API key
+- The key should start with `AIza`
+
+## What to Expect
+
+1. You'll see the upload page
+2. Upload a PDF or image file with lecture slides
+3. Wait for the quiz to generate (may take 30-60 seconds)
+4. Take the quiz
+5. See your results with correct answers
+
+
