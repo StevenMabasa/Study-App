@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: study-app-api
+    env: node
+    plan: free
+    branch: main
+    rootDir: server
+    buildCommand: "npm install"
+    startCommand: "npm start"
+
