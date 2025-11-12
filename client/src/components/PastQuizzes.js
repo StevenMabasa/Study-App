@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getSavedQuizzes, getAllSubjects, deleteQuiz } from '../utils/quizStorage';
 import './PastQuizzes.css';
 
@@ -8,11 +8,7 @@ const PastQuizzes = ({ onReviewQuiz }) => {
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
-  useEffect(() => {
-    loadQuizzes();
-  }, [selectedSubject, sortBy]);
-
-  const loadQuizzes = () => {
+  const loadQuizzes = useCallback(() => {
     let allQuizzes = getSavedQuizzes();
     const allSubjects = getAllSubjects();
     setSubjects(allSubjects);
@@ -35,7 +31,11 @@ const PastQuizzes = ({ onReviewQuiz }) => {
     });
 
     setQuizzes(allQuizzes);
-  };
+  }, [selectedSubject, sortBy]);
+
+  useEffect(() => {
+    loadQuizzes();
+  }, [loadQuizzes]);
 
   const handleDelete = (id, e) => {
     e.stopPropagation();
