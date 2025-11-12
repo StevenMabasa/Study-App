@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './FileUpload.css';
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000');
+
 const FileUpload = ({ onQuizGenerated }) => {
   const [file, setFile] = useState(null);
   const [subject, setSubject] = useState('');
@@ -63,7 +67,7 @@ const FileUpload = ({ onQuizGenerated }) => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/upload', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

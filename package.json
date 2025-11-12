@@ -6,6 +6,13 @@
     "postinstall": "cd client && npm install",
     "build": "cd client && npm run build",
     "start": "cd client && npm start"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.2",
+    "formidable": "^2.1.2",
+    "pdf-parse": "^1.1.1",
+    "tesseract.js": "^5.0.4"
   }
 }
 
