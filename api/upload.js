@@ -155,3 +155,10 @@ module.exports = async (req, res) => {
   }
 };
 
+module.exports.config = {
+  api: {
+    bodyParser: false,
+    sizeLimit: '50mb'
+  }
+};
+
