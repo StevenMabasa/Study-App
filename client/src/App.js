@@ -26,10 +26,36 @@ function App() {
     setShowResults(true);
     setCurrentView('results');
     
+    const normalizeText = (value) => {
+      return String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+    };
+
+    const isQuestionCorrect = (question, userAnswer) => {
+      const questionType = question.type || 'multiple_choice';
+
+      if (questionType === 'short_answer') {
+        const acceptable =
+          Array.isArray(question.acceptableAnswers) && question.acceptableAnswers.length
+            ? question.acceptableAnswers
+            : question.correctAnswer
+              ? [question.correctAnswer]
+              : [];
+
+        const normalizedUser = normalizeText(userAnswer);
+        if (!normalizedUser) return false;
+        return acceptable.some((a) => normalizeText(a) === normalizedUser);
+      }
+
+      return userAnswer === question.correctAnswer;
+    };
+
     // Calculate score
     let correct = 0;
     quiz.questions.forEach((question, index) => {
-      if (answers[index] === question.correctAnswer) {
+      if (isQuestionCorrect(question, answers[index])) {
         correct++;
       }
     });
