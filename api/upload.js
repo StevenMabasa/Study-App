@@ -72,17 +72,31 @@ async function generateQuiz(text) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = `You are a helpful assistant that creates educational quizzes. Based on the following lecture content, create a comprehensive quiz with 20 multiple-choice questions. 
-Each question should have 4 options (A, B, C, D) and only one correct answer. 
-Format your response as a JSON array where each question has:
+  const prompt = `You are a helpful assistant that creates educational quizzes.
+
+Based on the following lecture content, create a quiz with EXACTLY 20 questions, with this mix:
+- 10 multiple_choice questions
+- 5 true_false questions
+- 5 short_answer questions
+
+Return ONLY valid JSON. No markdown, no extra commentary.
+
+Format your response as a JSON array where each question is an object with these fields:
+- type: one of "multiple_choice", "true_false", "short_answer"
 - question: the question text
-- options: array of 4 options
-- correctAnswer: the index (0-3) of the correct option
+- options: for "multiple_choice" and "true_false" provide options, otherwise []
+- correctAnswer: for "multiple_choice" provide an integer index 0-3, for "true_false" provide integer index 0-1, for "short_answer" set null
+- acceptableAnswers: for "short_answer" provide an array of 1-3 acceptable answers (strings). For other types use [].
+
+Rules:
+- multiple_choice: options must be exactly 4 strings (A,B,C,D order). Only one correct option.
+- true_false: options must be exactly ["True","False"] in that order. Only one correct.
+- short_answer: options must be []. The correct answer should be concise. Provide acceptableAnswers for common correct variations.
 
 Lecture content:
 ${text.substring(0, 30000)}
 
-Return ONLY valid JSON array, no other text or markdown formatting.`;
+Return ONLY the JSON array of 20 question objects.`;
 
   const result = await model.generateContent(prompt);
   const response = await result.response;
@@ -95,7 +109,10 @@ Return ONLY valid JSON array, no other text or markdown formatting.`;
     jsonText = responseText.split('```')[1].split('```')[0].trim();
   }
 
-  return JSON.parse(jsonText);
+  const parsed = JSON.parse(jsonText);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
+  throw new Error('Unexpected quiz response format from model');
 }
 
 async function cleanupFile(filePath) {

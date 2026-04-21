@@ -4,20 +4,24 @@ import './Quiz.css';
 const Quiz = ({ questions = [], subject, metadata, onComplete, onReset }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [selectedOption, setSelectedOption] = useState(null);
 
   const handleOptionSelect = (optionIndex) => {
-    setSelectedOption(optionIndex);
-    setAnswers({
-      ...answers,
+    setAnswers((prev) => ({
+      ...prev,
       [currentQuestion]: optionIndex
-    });
+    }));
+  };
+
+  const handleShortAnswerChange = (value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [currentQuestion]: value
+    }));
   };
 
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      setSelectedOption(answers[currentQuestion + 1] ?? null);
     } else {
       // Quiz complete
       onComplete(answers);
@@ -27,7 +31,6 @@ const Quiz = ({ questions = [], subject, metadata, onComplete, onReset }) => {
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
-      setSelectedOption(answers[currentQuestion - 1] ?? null);
     }
   };
 
@@ -35,10 +38,19 @@ const Quiz = ({ questions = [], subject, metadata, onComplete, onReset }) => {
     onComplete(answers);
   };
 
-  const question = questions[currentQuestion] || { options: [] };
+  const question = questions[currentQuestion] || { options: [], type: 'multiple_choice' };
+  const questionType = question.type || 'multiple_choice';
   const totalQuestions = questions.length || 1;
   const progress = ((currentQuestion + 1) / totalQuestions) * 100;
-  const answeredQuestions = Object.keys(answers).length;
+  const answeredQuestions = questions.reduce((acc, q, idx) => {
+    const userAnswer = answers[idx];
+    if (q.type === 'short_answer') {
+      return typeof userAnswer === 'string' && userAnswer.trim() ? acc + 1 : acc;
+    }
+    return userAnswer !== undefined && userAnswer !== null ? acc + 1 : acc;
+  }, 0);
+
+  const currentAnswer = answers[currentQuestion];
 
   return (
     <div className="quiz">
@@ -57,24 +69,36 @@ const Quiz = ({ questions = [], subject, metadata, onComplete, onReset }) => {
       <div className="question-card">
         {subject && <div className="question-subject">Subject: {subject}</div>}
         <h2 className="question-text">{question.question}</h2>
-        
-        <div className="options">
-          {question.options?.map((option, index) => {
-            const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
-            const isSelected = selectedOption === index;
-            
-            return (
-              <button
-                key={index}
-                className={`option ${isSelected ? 'selected' : ''}`}
-                onClick={() => handleOptionSelect(index)}
-              >
-                <span className="option-label">{optionLabel}</span>
-                <span className="option-text">{option}</span>
-              </button>
-            );
-          })}
-        </div>
+
+        {questionType === 'short_answer' ? (
+          <div className="short-answer-container">
+            <input
+              className="short-answer-input"
+              type="text"
+              value={typeof currentAnswer === 'string' ? currentAnswer : ''}
+              onChange={(e) => handleShortAnswerChange(e.target.value)}
+              placeholder="Type a short answer..."
+            />
+            <div className="short-answer-hint">Tip: keep it short and exact.</div>
+          </div>
+        ) : (
+          <div className="options">
+            {question.options?.map((option, index) => {
+              const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
+              const isSelected = currentAnswer === index;
+              return (
+                <button
+                  key={index}
+                  className={`option ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleOptionSelect(index)}
+                >
+                  <span className="option-label">{optionLabel}</span>
+                  <span className="option-text">{option}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="quiz-navigation">
