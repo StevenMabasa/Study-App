@@ -11,7 +11,7 @@ cd C:\Users\steve\Desktop\Study_App
 
 Your `.env` file should be in the `server` folder with your Gemini API key:
 ```
-GEMINI_API_KEY=AIzaSyAYKsy5-et6bJj1GgtoA_jmCsTVBNvvr78
+GEMINI_API_KEY=your-api-key
 PORT=5000
 ```
 
