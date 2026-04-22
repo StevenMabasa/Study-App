@@ -28,15 +28,82 @@ function getGeminiModel() {
 }
 
 function parseModelJson(responseText) {
-  let jsonText = responseText.trim();
+  const rawText = String(responseText || '').trim();
+  const candidates = [];
 
-  if (jsonText.includes('```json')) {
-    jsonText = jsonText.split('```json')[1].split('```')[0].trim();
-  } else if (jsonText.includes('```')) {
-    jsonText = jsonText.split('```')[1].split('```')[0].trim();
+  const addCandidate = (value) => {
+    const normalized = String(value || '').trim();
+    if (normalized && !candidates.includes(normalized)) {
+      candidates.push(normalized);
+    }
+  };
+
+  addCandidate(rawText);
+
+  if (rawText.includes('```json')) {
+    addCandidate(rawText.split('```json')[1].split('```')[0]);
+  } else if (rawText.includes('```')) {
+    addCandidate(rawText.split('```')[1].split('```')[0]);
   }
 
-  return JSON.parse(jsonText);
+  const firstBraceIndex = rawText.search(/[\[{]/);
+  const lastCurly = rawText.lastIndexOf('}');
+  const lastSquare = rawText.lastIndexOf(']');
+  const lastBraceIndex = Math.max(lastCurly, lastSquare);
+
+  if (firstBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
+    addCandidate(rawText.slice(firstBraceIndex, lastBraceIndex + 1));
+  }
+
+  let lastError;
+
+  for (const candidate of candidates) {
+    const sanitized = candidate
+      .replace(/^\uFEFF/, '')
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2018\u2019]/g, "'")
+      .trim();
+
+    const variants = [
+      sanitized,
+      sanitized.replace(/,\s*([}\]])/g, '$1')
+    ];
+
+    for (const variant of variants) {
+      try {
+        return JSON.parse(variant);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+  }
+
+  throw lastError || new Error('Model did not return valid JSON');
+}
+
+async function generateJsonResponse(prompt, contentType) {
+  const model = getGeminiModel();
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const responseText = response.text();
+
+  try {
+    return parseModelJson(responseText);
+  } catch (parseError) {
+    const repairPrompt = `You are fixing malformed JSON for a ${contentType} response.
+
+Return ONLY valid JSON.
+Do not use markdown fences.
+Do not add commentary.
+Preserve the original structure and meaning as closely as possible.
+
+Malformed JSON:
+${responseText}`;
+
+    const repairResult = await model.generateContent(repairPrompt);
+    const repairResponse = await repairResult.response;
+    return parseModelJson(repairResponse.text());
+  }
 }
 
 function throwGenerationError(error, contentType) {
@@ -113,7 +180,6 @@ async function extractTextFromFile(filePath, fileExtension) {
 // Generate quiz using Google Gemini
 async function generateQuiz(text, subject = '') {
   try {
-    const model = getGeminiModel();
     const prompt = `You are a helpful assistant that creates educational quizzes.
 
 Subject/category:
@@ -143,9 +209,7 @@ ${text.substring(0, 30000)}
 
 Return ONLY the JSON array of 20 question objects.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const parsed = parseModelJson(response.text());
+    const parsed = await generateJsonResponse(prompt, 'quiz');
 
     if (Array.isArray(parsed)) return parsed;
     if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
@@ -157,7 +221,6 @@ Return ONLY the JSON array of 20 question objects.`;
 
 async function generateLesson(text, subject = '') {
   try {
-    const model = getGeminiModel();
     const prompt = `You are a patient tutor who turns lecture slides into a clear lesson for a student.
 
 Subject/category:
@@ -198,9 +261,7 @@ Rules:
 Lecture content:
 ${text.substring(0, 30000)}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const parsed = parseModelJson(response.text());
+    const parsed = await generateJsonResponse(prompt, 'lesson');
 
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       if (parsed.lesson && typeof parsed.lesson === 'object') {
@@ -263,7 +324,7 @@ async function handleStudyUpload(req, res, forcedMode) {
 
 // Upload and process file
 app.post('/api/upload', upload.single('file'), async (req, res) => {
-  await handleStudyUpload(req, res, 'quiz');
+  await handleStudyUpload(req, res);
 });
 
 app.post('/api/lesson', upload.single('file'), async (req, res) => {
