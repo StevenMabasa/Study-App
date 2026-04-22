@@ -12,13 +12,15 @@ const modeCopy = {
     title: 'Generate Quiz',
     description: 'Create 20 questions that test how well you understand the material.',
     loading: 'Extracting text and generating quiz questions...',
-    button: 'Generate Quiz'
+    button: 'Generate Quiz',
+    highlights: ['20 focused questions', 'Instant scoring', 'Saved to past quizzes']
   },
   lesson: {
     title: 'Create Lesson',
     description: 'Turn the upload into a guided explanation that teaches the topic clearly.',
     loading: 'Extracting text and building your lesson...',
-    button: 'Create Lesson'
+    button: 'Create Lesson',
+    highlights: ['Step-by-step explanations', 'Examples and summaries', 'Interactive follow-up chat']
   }
 };
 
@@ -26,6 +28,24 @@ const createErrorState = (message) => ({
   variant: 'error',
   message
 });
+
+const setupTips = [
+  'Upload clear lecture slides, scanned notes, or sharp screenshots.',
+  'Use a specific subject name so the explanations stay on topic.',
+  'Choose lesson mode first when you are learning something new.'
+];
+
+const formatFileSize = (size) => {
+  if (!size) {
+    return '0 KB';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const unitIndex = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+  const value = size / 1024 ** unitIndex;
+
+  return `${value >= 100 || unitIndex === 0 ? Math.round(value) : value.toFixed(1)} ${units[unitIndex]}`;
+};
 
 const FileUpload = ({ onContentGenerated }) => {
   const [file, setFile] = useState(null);
@@ -146,96 +166,174 @@ const FileUpload = ({ onContentGenerated }) => {
 
   return (
     <div className="file-upload">
-      <div
-        className={`upload-area ${dragActive ? 'drag-active' : ''}`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        <div className="upload-icon">FILE</div>
-        <h3>Upload Notes or Lecture Slides</h3>
-        <p>Drag and drop your PDF or image file here, or click to browse</p>
-        <input
-          type="file"
-          id="file-input"
-          accept=".pdf,.jpg,.jpeg,.png,.gif"
-          onChange={handleFileChange}
-          style={{ display: 'none' }}
-        />
-        <label htmlFor="file-input" className="browse-button">
-          Browse Files
-        </label>
-        {file && (
-          <div className="selected-file">
-            <span>Selected: {file.name}</span>
-            <button type="button" onClick={() => setFile(null)} className="remove-file">
-              x
+      <div className="study-panel-header">
+        <div>
+          <div className="study-panel-kicker">Start here</div>
+          <h2>Build a study session from your own material</h2>
+        </div>
+        <p>
+          Upload a PDF or image of your slides, choose how you want to learn, and let the app
+          turn your notes into something usable.
+        </p>
+      </div>
+
+      <div className="file-upload-layout">
+        <div className="file-upload-main">
+          <div
+            className={`upload-area ${dragActive ? 'drag-active' : ''}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <div className="upload-icon">SLIDES</div>
+            <h3>Upload Notes or Lecture Slides</h3>
+            <p>Drag and drop your PDF or image file here, or click to browse</p>
+            <input
+              type="file"
+              id="file-input"
+              accept=".pdf,.jpg,.jpeg,.png,.gif"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="file-input" className="browse-button">
+              Browse Files
+            </label>
+            {file && (
+              <div className="selected-file">
+                <span>{file.name}</span>
+                <button type="button" onClick={() => setFile(null)} className="remove-file">
+                  x
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="study-controls">
+            <div className="subject-input-container">
+              <label htmlFor="subject-input" className="subject-label">
+                Subject / Category
+              </label>
+              <input
+                type="text"
+                id="subject-input"
+                className="subject-input"
+                placeholder="e.g., Mathematics, History, Biology..."
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                disabled={uploading}
+              />
+              <p className="subject-hint">
+                This helps tailor the quiz or lesson to the topic you are studying.
+              </p>
+            </div>
+
+            <div className="study-mode-selector">
+              <div className="study-mode-header">
+                <h4>Choose Study Mode</h4>
+                <p>Pick whether you want to be tested or taught.</p>
+              </div>
+
+              <div className="mode-options">
+                {Object.entries(modeCopy).map(([modeKey, config]) => (
+                  <button
+                    key={modeKey}
+                    type="button"
+                    className={`mode-card ${mode === modeKey ? 'active' : ''}`}
+                    onClick={() => setMode(modeKey)}
+                    disabled={uploading}
+                  >
+                    <span className="mode-card-title">{config.title}</span>
+                    <span className="mode-card-description">{config.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className={`error-message ${error.variant === 'quota' ? 'warning-banner' : ''}`}>
+              {error.variant === 'quota' && <strong>Usage Limit Reached</strong>}
+              {error.message}
+            </div>
+          )}
+
+          <div className="study-action-row">
+            <div className="study-action-copy">
+              <span className="study-action-label">Selected workflow</span>
+              <strong>{modeCopy[mode].title}</strong>
+              <p>{modeCopy[mode].description}</p>
+            </div>
+
+            <button
+              type="button"
+              className={`upload-button ${mode === 'lesson' ? 'lesson-mode' : ''}`}
+              onClick={handleUpload}
+              disabled={!file || uploading}
+            >
+              {uploading ? 'Processing...' : modeCopy[mode].button}
             </button>
           </div>
-        )}
+
+          {uploading && (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>{modeCopy[mode].loading}</p>
+            </div>
+          )}
+        </div>
+
+        <aside className="study-sidebar">
+          <section className="sidebar-card mode-preview-card">
+            <div className="sidebar-kicker">Current mode</div>
+            <h3>{modeCopy[mode].title}</h3>
+            <p>{modeCopy[mode].description}</p>
+            <ul className="sidebar-list">
+              {modeCopy[mode].highlights.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="sidebar-card material-card">
+            <div className="sidebar-kicker">Session setup</div>
+            <h3>{file ? 'Material selected' : 'Waiting for material'}</h3>
+            <p>
+              {file
+                ? 'Your file is ready to be turned into a study experience.'
+                : 'Choose a file to unlock quiz generation or a guided lesson.'}
+            </p>
+
+            <div className="material-meta">
+              <div className="material-meta-item">
+                <span className="material-meta-label">Subject</span>
+                <strong>{subject.trim() || 'Add a subject'}</strong>
+              </div>
+              <div className="material-meta-item">
+                <span className="material-meta-label">File</span>
+                <strong>{file ? formatFileSize(file.size) : 'No file yet'}</strong>
+              </div>
+            </div>
+
+            {file && (
+              <div className="file-summary-card">
+                <span className="file-summary-name">{file.name}</span>
+                <span className="file-summary-type">{file.type || 'Uploaded file'}</span>
+              </div>
+            )}
+          </section>
+
+          <section className="sidebar-card tips-card">
+            <div className="sidebar-kicker">Best results</div>
+            <h3>Make the output sharper</h3>
+            <ul className="sidebar-list sidebar-list-muted">
+              {setupTips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </section>
+        </aside>
       </div>
-
-      <div className="subject-input-container">
-        <label htmlFor="subject-input" className="subject-label">
-          Subject / Category
-        </label>
-        <input
-          type="text"
-          id="subject-input"
-          className="subject-input"
-          placeholder="e.g., Mathematics, History, Biology..."
-          value={subject}
-          onChange={(event) => setSubject(event.target.value)}
-          disabled={uploading}
-        />
-        <p className="subject-hint">This helps tailor the quiz or lesson to the topic you are studying.</p>
-      </div>
-
-      <div className="study-mode-selector">
-        <div className="study-mode-header">
-          <h4>Choose Study Mode</h4>
-          <p>Pick whether you want to be tested or taught.</p>
-        </div>
-
-        <div className="mode-options">
-          {Object.entries(modeCopy).map(([modeKey, config]) => (
-            <button
-              key={modeKey}
-              type="button"
-              className={`mode-card ${mode === modeKey ? 'active' : ''}`}
-              onClick={() => setMode(modeKey)}
-              disabled={uploading}
-            >
-              <span className="mode-card-title">{config.title}</span>
-              <span className="mode-card-description">{config.description}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && (
-        <div className={`error-message ${error.variant === 'quota' ? 'warning-banner' : ''}`}>
-          {error.variant === 'quota' && <strong>Usage Limit Reached</strong>}
-          {error.message}
-        </div>
-      )}
-
-      <button
-        type="button"
-        className={`upload-button ${mode === 'lesson' ? 'lesson-mode' : ''}`}
-        onClick={handleUpload}
-        disabled={!file || uploading}
-      >
-        {uploading ? 'Processing...' : modeCopy[mode].button}
-      </button>
-
-      {uploading && (
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>{modeCopy[mode].loading}</p>
-        </div>
-      )}
     </div>
   );
 };

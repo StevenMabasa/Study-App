@@ -1,43 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+  --bg-deep: #040507;
+  --bg-panel: rgba(9, 12, 20, 0.78);
+  --bg-panel-strong: rgba(12, 18, 31, 0.92);
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --text-main: #f7f4ee;
+  --text-muted: #b8c4d6;
+  --accent-gold: #ffb347;
+  --accent-orange: #ff8a00;
+  --accent-cyan: #81def8;
+  --shadow-heavy: 0 32px 80px rgba(0, 0, 0, 0.38);
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: radial-gradient(circle at 20% 50%, rgba(255, 138, 0, 0.32) 0%, transparent 55%),
-    radial-gradient(circle at 80% 80%, rgba(255, 170, 64, 0.22) 0%, transparent 60%),
-    radial-gradient(circle at 40% 20%, rgba(255, 115, 0, 0.25) 0%, transparent 55%),
-    linear-gradient(180deg, #000000 0%, #050505 55%, #000000 100%);
-  background-attachment: fixed;
   min-height: 100vh;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255, 138, 0, 0.18) 0%, transparent 28%),
+    radial-gradient(circle at 84% 14%, rgba(86, 204, 242, 0.16) 0%, transparent 24%),
+    radial-gradient(circle at 78% 72%, rgba(255, 179, 71, 0.12) 0%, transparent 26%),
+    linear-gradient(180deg, #020304 0%, #07090f 46%, #030406 100%);
+  background-attachment: fixed;
   position: relative;
-  color: #ffffff;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
 }
 
 body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(255, 138, 0, 0.16) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(255, 170, 64, 0.10) 0%, transparent 50%),
-    radial-gradient(circle at 40% 20%, rgba(255, 115, 0, 0.12) 0%, transparent 50%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%, rgba(255, 255, 255, 0.03) 100%);
-  pointer-events: none;
-  z-index: 0;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.035) 0%, transparent 28%),
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.025) 50%, transparent 100%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.45));
+}
+
+body::after {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 120px 120px;
+  opacity: 0.14;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.75) 0%, transparent 80%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
 }
 
 code {
-  font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-family: 'JetBrains Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+a {
+  color: inherit;
+}
