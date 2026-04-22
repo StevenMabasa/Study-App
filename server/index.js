@@ -16,9 +16,38 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('uploads'));
 
-// Initialize Google Gemini (user will need to set GEMINI_API_KEY in .env)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'your-api-key-here');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+function getGeminiModel() {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('Server configuration error: GEMINI_API_KEY is not set.');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+}
+
+function parseModelJson(responseText) {
+  let jsonText = responseText.trim();
+
+  if (jsonText.includes('```json')) {
+    jsonText = jsonText.split('```json')[1].split('```')[0].trim();
+  } else if (jsonText.includes('```')) {
+    jsonText = jsonText.split('```')[1].split('```')[0].trim();
+  }
+
+  return JSON.parse(jsonText);
+}
+
+function throwGenerationError(error, contentType) {
+  console.error(`Error generating ${contentType}:`, error);
+
+  if (error?.message?.includes('reported as leaked')) {
+    throw new Error('The Gemini API key on the backend was disabled after being exposed. Add a new GEMINI_API_KEY in Render and restart the backend.');
+  }
+
+  throw new Error(`Error generating ${contentType}: ${error.message}`);
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -73,10 +102,22 @@ async function extractTextFromImage(filePath) {
   }
 }
 
+async function extractTextFromFile(filePath, fileExtension) {
+  if (fileExtension === '.pdf') {
+    return extractTextFromPDF(filePath);
+  }
+
+  return extractTextFromImage(filePath);
+}
+
 // Generate quiz using Google Gemini
-async function generateQuiz(text) {
+async function generateQuiz(text, subject = '') {
   try {
+    const model = getGeminiModel();
     const prompt = `You are a helpful assistant that creates educational quizzes.
+
+Subject/category:
+${subject || 'Not provided'}
 
 Based on the following lecture content, create a quiz with EXACTLY 20 questions, with this mix:
 - 10 multiple_choice questions
@@ -104,24 +145,74 @@ Return ONLY the JSON array of 20 question objects.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const responseText = response.text().trim();
-    
-    // Clean the response to extract JSON
-    let jsonText = responseText;
-    if (responseText.includes('```json')) {
-      jsonText = responseText.split('```json')[1].split('```')[0].trim();
-    } else if (responseText.includes('```')) {
-      jsonText = responseText.split('```')[1].split('```')[0].trim();
-    }
+    const parsed = parseModelJson(response.text());
 
-    const parsed = JSON.parse(jsonText);
-    // Be tolerant if the model wraps output (array vs { questions: [...] }).
     if (Array.isArray(parsed)) return parsed;
     if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
     throw new Error('Unexpected quiz response format from model');
   } catch (error) {
-    console.error('Error generating quiz:', error);
-    throw new Error(`Error generating quiz: ${error.message}`);
+    throwGenerationError(error, 'quiz');
+  }
+}
+
+async function generateLesson(text, subject = '') {
+  try {
+    const model = getGeminiModel();
+    const prompt = `You are a patient tutor who turns lecture slides into a clear lesson for a student.
+
+Subject/category:
+${subject || 'Not provided'}
+
+Based on the lecture content below, create a lesson that teaches the material in simple, student-friendly language.
+
+Return ONLY valid JSON. No markdown, no code fences, no extra commentary.
+
+Use this exact JSON shape:
+{
+  "title": "string",
+  "overview": "string",
+  "learningObjectives": ["string", "string", "string"],
+  "sections": [
+    {
+      "heading": "string",
+      "explanation": "string",
+      "keyPoints": ["string", "string"],
+      "example": "string",
+      "checkYourUnderstanding": ["string", "string"]
+    }
+  ],
+  "summary": "string",
+  "studyTips": ["string", "string", "string"],
+  "possibleMisconceptions": ["string", "string"]
+}
+
+Rules:
+- Create 4 to 6 lesson sections.
+- Explain jargon in plain language.
+- Use only the information supported by the lecture content.
+- Make the explanations feel like a teacher walking the student through the topic.
+- Keep examples practical and easy to understand.
+- The "checkYourUnderstanding" items should be reflective questions, not answers.
+- Keep every field concise but helpful.
+
+Lecture content:
+${text.substring(0, 30000)}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const parsed = parseModelJson(response.text());
+
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (parsed.lesson && typeof parsed.lesson === 'object') {
+        return parsed.lesson;
+      }
+
+      return parsed;
+    }
+
+    throw new Error('Unexpected lesson response format from model');
+  } catch (error) {
+    throwGenerationError(error, 'lesson');
   }
 }
 
@@ -132,29 +223,35 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    const mode = String(req.body?.mode || 'quiz').trim().toLowerCase();
+    const subject = typeof req.body?.subject === 'string' ? req.body.subject.trim() : '';
+
+    if (!['quiz', 'lesson'].includes(mode)) {
+      return res.status(400).json({ error: 'Invalid mode. Use "quiz" or "lesson".' });
+    }
+
     const filePath = req.file.path;
     const fileExtension = path.extname(req.file.originalname).toLowerCase();
-    let extractedText = '';
-
-    // Extract text based on file type
-    if (fileExtension === '.pdf') {
-      extractedText = await extractTextFromPDF(filePath);
-    } else {
-      // Image file
-      extractedText = await extractTextFromImage(filePath);
-    }
+    const extractedText = await extractTextFromFile(filePath, fileExtension);
 
     if (!extractedText || extractedText.trim().length < 50) {
       return res.status(400).json({ error: 'Could not extract sufficient text from the file. Please ensure the file contains readable text.' });
     }
 
-    // Generate quiz
-    const quiz = await generateQuiz(extractedText);
+    const content =
+      mode === 'lesson'
+        ? { lesson: await generateLesson(extractedText, subject) }
+        : { quiz: await generateQuiz(extractedText, subject) };
 
     // Clean up uploaded file
     fs.unlinkSync(filePath);
 
-    res.json({ quiz, extractedText: extractedText.substring(0, 500) }); // Return first 500 chars for preview
+    res.json({
+      mode,
+      subject,
+      ...content,
+      extractedText: extractedText.substring(0, 500)
+    });
   } catch (error) {
     console.error('Upload error:', error);
     if (req.file && fs.existsSync(req.file.path)) {
