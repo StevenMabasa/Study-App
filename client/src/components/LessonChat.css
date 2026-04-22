@@ -123,6 +123,17 @@
   color: #ffb9b9;
 }
 
+.lesson-chat-error strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.lesson-chat-error.warning-banner {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.16) 0%, rgba(255, 138, 0, 0.10) 100%);
+  border-color: rgba(255, 179, 71, 0.3);
+  color: #ffe4a3;
+}
+
 .lesson-chat-form {
   display: flex;
   flex-direction: column;

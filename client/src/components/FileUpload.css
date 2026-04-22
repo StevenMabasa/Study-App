@@ -179,6 +179,18 @@
   width: 100%;
 }
 
+.error-message strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.error-message.warning-banner {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.18) 0%, rgba(255, 138, 0, 0.12) 100%);
+  color: #ffe29a;
+  border-left-color: #ffb347;
+  border: 1px solid rgba(255, 179, 71, 0.28);
+}
+
 .loading {
   margin-top: 30px;
   text-align: center;

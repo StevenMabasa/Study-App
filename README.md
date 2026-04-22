@@ -11,6 +11,8 @@ https://jambaya-quiz-generator.netlify.app/
 
 Backend on Render:
 - `GEMINI_API_KEY=your-new-gemini-api-key`
+- `GEMINI_GENERATION_MODEL=gemini-2.5-flash-lite`
+- `GEMINI_CHAT_MODEL=gemini-2.5-flash-lite`
 
 Frontend on Netlify:
 - `REACT_APP_API_URL=https://your-render-backend-url`

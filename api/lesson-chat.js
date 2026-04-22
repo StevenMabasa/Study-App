@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite';
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -6,7 +7,7 @@ function setCors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-function getGeminiModel() {
+function getGeminiModel(modelName = CHAT_MODEL) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || apiKey.trim() === '') {
@@ -14,7 +15,7 @@ function getGeminiModel() {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return genAI.getGenerativeModel({ model: modelName });
 }
 
 function cleanTextResponse(responseText) {
@@ -41,14 +42,14 @@ function normalizeChatHistory(history) {
     .filter((message) => message && typeof message.content === 'string')
     .map((message) => ({
       role: message.role === 'assistant' ? 'assistant' : 'user',
-      content: truncateText(message.content, 1500)
+      content: truncateText(message.content, 600)
     }))
     .filter((message) => message.content)
-    .slice(-8);
+    .slice(-4);
 }
 
-async function generateTextResponse(prompt, contentType) {
-  const model = getGeminiModel();
+async function generateTextResponse(prompt, contentType, modelName = CHAT_MODEL) {
+  const model = getGeminiModel(modelName);
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const reply = cleanTextResponse(response.text());
@@ -68,9 +69,9 @@ async function generateLessonChatReply({ question, subject = '', lesson = {}, ex
         .join('\n\n')
     : 'No previous conversation.';
 
-  const lessonContext = truncateText(JSON.stringify(lesson, null, 2), 12000) || '{}';
-  const sourceContext = truncateText(extractedText, 12000) || 'No source text provided.';
-  const safeQuestion = truncateText(question, 2000);
+  const lessonContext = truncateText(JSON.stringify(lesson, null, 2), 4000) || '{}';
+  const sourceContext = truncateText(extractedText, 1200) || 'No source text provided.';
+  const safeQuestion = truncateText(question, 800);
 
   const prompt = `You are a friendly study tutor helping a student understand their lesson.
 
@@ -100,7 +101,7 @@ ${safeQuestion}
 
 Write a helpful tutor reply in plain text. Prefer short paragraphs. Use bullets only when they genuinely help clarity.`;
 
-  return generateTextResponse(prompt, 'lesson chat');
+  return generateTextResponse(prompt, 'lesson chat', CHAT_MODEL);
 }
 
 function getRequestBody(req) {

@@ -3,10 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
 const { createWorker } = require('tesseract.js');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 const TMP_DIR = path.join('/tmp', 'uploads');
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const GENERATION_MODEL = process.env.GEMINI_GENERATION_MODEL || 'gemini-2.5-flash-lite';
 
 async function ensureTmpDir() {
   await fs.promises.mkdir(TMP_DIR, { recursive: true });
@@ -18,7 +19,7 @@ function setCors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-function getGeminiModel() {
+function getGeminiModel(modelName = GENERATION_MODEL, generationConfig) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || apiKey.trim() === '') {
@@ -26,7 +27,13 @@ function getGeminiModel() {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const modelConfig = { model: modelName };
+
+  if (generationConfig) {
+    modelConfig.generationConfig = generationConfig;
+  }
+
+  return genAI.getGenerativeModel(modelConfig);
 }
 
 function parseModelJson(responseText) {
@@ -83,29 +90,81 @@ function parseModelJson(responseText) {
   throw lastError || new Error('Model did not return valid JSON');
 }
 
-async function generateJsonResponse(prompt, contentType) {
-  const model = getGeminiModel();
+const QUIZ_SCHEMA = {
+  description: 'A list of study quiz questions.',
+  type: SchemaType.ARRAY,
+  items: {
+    type: SchemaType.OBJECT,
+    properties: {
+      type: { type: SchemaType.STRING },
+      question: { type: SchemaType.STRING },
+      options: {
+        type: SchemaType.ARRAY,
+        items: { type: SchemaType.STRING }
+      },
+      correctAnswer: {
+        type: SchemaType.NUMBER,
+        nullable: true
+      },
+      acceptableAnswers: {
+        type: SchemaType.ARRAY,
+        items: { type: SchemaType.STRING }
+      }
+    },
+    required: ['type', 'question', 'options', 'correctAnswer', 'acceptableAnswers']
+  }
+};
+
+const LESSON_SCHEMA = {
+  type: SchemaType.OBJECT,
+  properties: {
+    title: { type: SchemaType.STRING },
+    overview: { type: SchemaType.STRING },
+    learningObjectives: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING }
+    },
+    sections: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          heading: { type: SchemaType.STRING },
+          explanation: { type: SchemaType.STRING },
+          keyPoints: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+          },
+          example: { type: SchemaType.STRING },
+          checkYourUnderstanding: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+          }
+        },
+        required: ['heading', 'explanation', 'keyPoints', 'example', 'checkYourUnderstanding']
+      }
+    },
+    summary: { type: SchemaType.STRING },
+    studyTips: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING }
+    },
+    possibleMisconceptions: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING }
+    }
+  },
+  required: ['title', 'overview', 'learningObjectives', 'sections', 'summary', 'studyTips', 'possibleMisconceptions']
+};
+
+async function generateJsonResponse(prompt, contentType, responseSchema, modelName = GENERATION_MODEL) {
+  const model = getGeminiModel(modelName, {
+    responseMimeType: 'application/json',
+    responseSchema
+  });
   const result = await model.generateContent(prompt);
   const response = await result.response;
-  const responseText = response.text();
-
-  try {
-    return parseModelJson(responseText);
-  } catch (parseError) {
-    const repairPrompt = `You are fixing malformed JSON for a ${contentType} response.
-
-Return ONLY valid JSON.
-Do not use markdown fences.
-Do not add commentary.
-Preserve the original structure and meaning as closely as possible.
-
-Malformed JSON:
-${responseText}`;
-
-    const repairResult = await model.generateContent(repairPrompt);
-    const repairResponse = await repairResult.response;
-    return parseModelJson(repairResponse.text());
-  }
+  return parseModelJson(response.text());
 }
 
 function throwGenerationError(error, contentType) {
@@ -113,6 +172,10 @@ function throwGenerationError(error, contentType) {
 
   if (error?.message?.includes('reported as leaked')) {
     throw new Error('The Gemini API key on the backend was disabled after being exposed. Add a new GEMINI_API_KEY in Render and restart the backend.');
+  }
+
+  if (error?.message?.includes('429') && error?.message?.toLowerCase().includes('quota')) {
+    throw new Error('Gemini request quota was exceeded for the current model. This app now uses lighter defaults, but you may still need to wait for the quota reset, switch models, or upgrade billing.');
   }
 
   throw new Error(`Error generating ${contentType}: ${error.message}`);
@@ -217,7 +280,7 @@ ${text.substring(0, 30000)}
 
 Return ONLY the JSON array of 20 question objects.`;
 
-    const parsed = await generateJsonResponse(prompt, 'quiz');
+    const parsed = await generateJsonResponse(prompt, 'quiz', QUIZ_SCHEMA, GENERATION_MODEL);
 
     if (Array.isArray(parsed)) return parsed;
     if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
@@ -269,7 +332,7 @@ Rules:
 Lecture content:
 ${text.substring(0, 30000)}`;
 
-    const parsed = await generateJsonResponse(prompt, 'lesson');
+    const parsed = await generateJsonResponse(prompt, 'lesson', LESSON_SCHEMA, GENERATION_MODEL);
 
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       if (parsed.lesson && typeof parsed.lesson === 'object') {
