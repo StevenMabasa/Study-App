@@ -86,15 +86,19 @@ const FileUpload = ({ onContentGenerated }) => {
     formData.append('file', file);
     formData.append('subject', trimmedSubject);
     formData.append('mode', mode);
+    const endpoint = `${API_BASE_URL}/api/upload${mode === 'lesson' ? '?mode=lesson' : ''}`;
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+      const response = await axios.post(endpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      const responseMode = response.data.mode === 'lesson' ? 'lesson' : 'quiz';
+      const responseMode =
+        response.data.mode === 'lesson' || (response.data.lesson && typeof response.data.lesson === 'object')
+          ? 'lesson'
+          : 'quiz';
       const basePackage = {
         mode: responseMode,
         subject: trimmedSubject,

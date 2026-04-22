@@ -216,14 +216,14 @@ ${text.substring(0, 30000)}`;
   }
 }
 
-// Upload and process file
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+async function handleStudyUpload(req, res, forcedMode) {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const mode = String(req.body?.mode || 'quiz').trim().toLowerCase();
+    const requestedMode = forcedMode || req.query?.mode || req.body?.mode || 'quiz';
+    const mode = String(requestedMode).trim().toLowerCase();
     const subject = typeof req.body?.subject === 'string' ? req.body.subject.trim() : '';
 
     if (!['quiz', 'lesson'].includes(mode)) {
@@ -259,6 +259,15 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
     res.status(500).json({ error: error.message });
   }
+}
+
+// Upload and process file
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  await handleStudyUpload(req, res, 'quiz');
+});
+
+app.post('/api/lesson', upload.single('file'), async (req, res) => {
+  await handleStudyUpload(req, res, 'lesson');
 });
 
 // Health check
