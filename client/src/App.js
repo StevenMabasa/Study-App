@@ -5,19 +5,31 @@ import Quiz from './components/Quiz';
 import Results from './components/Results';
 import PastQuizzes from './components/PastQuizzes';
 import QuizReview from './components/QuizReview';
+import Lesson from './components/Lesson';
 import { saveQuiz } from './utils/quizStorage';
 
 function App() {
   const [quiz, setQuiz] = useState(null);
+  const [lesson, setLesson] = useState(null);
   const [userAnswers, setUserAnswers] = useState(null);
   const [showResults, setShowResults] = useState(false);
-  const [currentView, setCurrentView] = useState('upload'); // 'upload', 'quiz', 'results', 'past', 'review'
+  const [currentView, setCurrentView] = useState('upload');
   const [reviewQuiz, setReviewQuiz] = useState(null);
 
-  const handleQuizGenerated = (quizPackage) => {
-    setQuiz(quizPackage);
+  const handleStudyContentGenerated = (contentPackage) => {
     setUserAnswers(null);
     setShowResults(false);
+    setReviewQuiz(null);
+
+    if (contentPackage.mode === 'lesson') {
+      setLesson(contentPackage);
+      setQuiz(null);
+      setCurrentView('lesson');
+      return;
+    }
+
+    setQuiz(contentPackage);
+    setLesson(null);
     setCurrentView('quiz');
   };
 
@@ -25,7 +37,7 @@ function App() {
     setUserAnswers(answers);
     setShowResults(true);
     setCurrentView('results');
-    
+
     const normalizeText = (value) => {
       return String(value ?? '')
         .trim()
@@ -46,19 +58,19 @@ function App() {
 
         const normalizedUser = normalizeText(userAnswer);
         if (!normalizedUser) return false;
-        return acceptable.some((a) => normalizeText(a) === normalizedUser);
+        return acceptable.some((answer) => normalizeText(answer) === normalizedUser);
       }
 
       return userAnswer === question.correctAnswer;
     };
 
-    // Calculate score
     let correct = 0;
     quiz.questions.forEach((question, index) => {
       if (isQuestionCorrect(question, answers[index])) {
         correct++;
       }
     });
+
     const totalQuestions = quiz.questions.length || 1;
     const score = {
       correct,
@@ -66,12 +78,12 @@ function App() {
       percentage: Math.round((correct / totalQuestions) * 100)
     };
 
-    // Save quiz to localStorage
     saveQuiz(quiz, answers, score);
   };
 
   const handleReset = () => {
     setQuiz(null);
+    setLesson(null);
     setUserAnswers(null);
     setShowResults(false);
     setReviewQuiz(null);
@@ -96,44 +108,47 @@ function App() {
     <div className="App">
       <div className="container">
         <header className="header">
-          <h1>📚 Study App</h1>
-          <p>Upload your lecture slides and generate a quiz to test your knowledge!</p>
+          <h1>Study App</h1>
+          <p>Upload your lecture slides or notes, then choose a quiz or a guided lesson.</p>
         </header>
 
-        {/* Navigation */}
         <nav className="main-nav">
-          <button 
+          <button
             className={`nav-tab ${currentView === 'upload' ? 'active' : ''}`}
             onClick={handleReset}
           >
-            🆕 New Quiz
+            New Study Session
           </button>
-          <button 
+          <button
             className={`nav-tab ${currentView === 'past' ? 'active' : ''}`}
             onClick={handleViewPastQuizzes}
           >
-            📖 Past Quizzes
+            Past Quizzes
           </button>
         </nav>
 
         {currentView === 'upload' && (
-          <FileUpload onQuizGenerated={handleQuizGenerated} />
+          <FileUpload onContentGenerated={handleStudyContentGenerated} />
         )}
 
         {currentView === 'quiz' && quiz && !showResults && (
-          <Quiz 
+          <Quiz
             subject={quiz.subject}
             questions={quiz.questions}
             metadata={quiz.metadata}
-            onComplete={handleQuizComplete} 
-            onReset={handleReset} 
+            onComplete={handleQuizComplete}
+            onReset={handleReset}
           />
         )}
 
+        {currentView === 'lesson' && lesson && (
+          <Lesson lesson={lesson} onReset={handleReset} />
+        )}
+
         {currentView === 'results' && quiz && showResults && (
-          <Results 
-            quiz={quiz} 
-            userAnswers={userAnswers} 
+          <Results
+            quiz={quiz}
+            userAnswers={userAnswers}
             onReset={handleReset}
             onViewPast={handleViewPastQuizzes}
           />
@@ -152,4 +167,3 @@ function App() {
 }
 
 export default App;
-

@@ -11,9 +11,13 @@ cd C:\Users\steve\Desktop\Study_App
 
 Your `.env` file should be in the `server` folder with your Gemini API key:
 ```
-GEMINI_API_KEY=your-api-key
+GEMINI_API_KEY=your-new-gemini-api-key
 PORT=5000
 ```
+
+For production deployments:
+- Render backend: set `GEMINI_API_KEY` in the Render service environment variables.
+- Netlify frontend: do not add the Gemini key there. The frontend only needs `REACT_APP_API_URL` pointing at your Render backend URL.
 
 ## Step 3: Run the App
 
@@ -62,6 +66,7 @@ The backend will be running on **http://localhost:5000** (you don't need to open
 ### If you see API key errors:
 - Make sure `server/.env` exists and has your Gemini API key
 - The key should start with `AIza`
+- If Google says the key was leaked, create a new key, update `GEMINI_API_KEY` on Render, and redeploy or restart the backend service
 
 ## What to Expect
 
