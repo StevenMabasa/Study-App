@@ -59,6 +59,13 @@ function getSingleFieldValue(value) {
   return value ?? '';
 }
 
+function getRequestedMode(req, fields) {
+  const requestUrl = new URL(req.url, 'http://localhost');
+  return String(requestUrl.searchParams.get('mode') || getSingleFieldValue(fields?.mode) || 'quiz')
+    .trim()
+    .toLowerCase();
+}
+
 async function parseUpload(req) {
   await ensureTmpDir();
 
@@ -241,7 +248,7 @@ module.exports = async (req, res) => {
     const { fields, file } = await parseUpload(req);
     uploadedFile = file;
 
-    const mode = String(getSingleFieldValue(fields?.mode) || 'quiz').trim().toLowerCase();
+    const mode = getRequestedMode(req, fields);
     const subject = String(getSingleFieldValue(fields?.subject) || '').trim();
 
     if (!['quiz', 'lesson'].includes(mode)) {
