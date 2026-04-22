@@ -1,0 +1,213 @@
+.lesson-chat {
+  background: linear-gradient(180deg, rgba(8, 12, 23, 0.96) 0%, rgba(14, 20, 35, 0.96) 100%);
+  border: 1px solid rgba(86, 204, 242, 0.18);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+}
+
+.lesson-chat-header {
+  margin-bottom: 18px;
+}
+
+.lesson-chat-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(86, 204, 242, 0.16);
+  color: #81def8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.lesson-chat-header h3 {
+  color: #ffffff;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.lesson-chat-header p {
+  color: #c7d4ea;
+  line-height: 1.7;
+}
+
+.lesson-chat-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.lesson-chat-starter {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6edf9;
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.lesson-chat-starter:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(129, 222, 248, 0.45);
+  background: rgba(86, 204, 242, 0.12);
+}
+
+.lesson-chat-starter:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lesson-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 18px;
+}
+
+.lesson-chat-message {
+  max-width: 88%;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lesson-chat-message.assistant {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lesson-chat-message.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(255, 138, 0, 0.18) 0%, rgba(118, 75, 162, 0.18) 100%);
+  border-color: rgba(255, 179, 71, 0.28);
+}
+
+.lesson-chat-message-role {
+  color: #ffb347;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.lesson-chat-message.user .lesson-chat-message-role {
+  color: #ffe3bf;
+}
+
+.lesson-chat-message-content {
+  color: #e8eef9;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.lesson-chat-thinking {
+  color: #b8c6dd;
+}
+
+.lesson-chat-error {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(214, 48, 49, 0.14);
+  border: 1px solid rgba(214, 48, 49, 0.28);
+  color: #ffb9b9;
+}
+
+.lesson-chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lesson-chat-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 110px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 2px solid rgba(86, 204, 242, 0.18);
+  background: rgba(4, 8, 18, 0.72);
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-family: 'Space Grotesk', sans-serif;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.lesson-chat-input:focus {
+  outline: none;
+  border-color: rgba(129, 222, 248, 0.7);
+  box-shadow: 0 0 0 4px rgba(86, 204, 242, 0.12);
+}
+
+.lesson-chat-input:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.lesson-chat-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.lesson-chat-hint {
+  color: #9fb0cb;
+  font-size: 0.9rem;
+}
+
+.lesson-chat-send {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2f80ed 0%, #56ccf2 100%);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 12px 26px rgba(47, 128, 237, 0.28);
+}
+
+.lesson-chat-send:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(47, 128, 237, 0.36);
+}
+
+.lesson-chat-send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .lesson-chat {
+    padding: 22px;
+  }
+
+  .lesson-chat-messages {
+    max-height: 440px;
+  }
+
+  .lesson-chat-message {
+    max-width: 100%;
+  }
+
+  .lesson-chat-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lesson-chat-send {
+    width: 100%;
+  }
+}

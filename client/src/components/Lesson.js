@@ -1,4 +1,5 @@
 import React from 'react';
+import LessonChat from './LessonChat';
 import './Lesson.css';
 
 const Lesson = ({ lesson, onReset }) => {
@@ -128,6 +129,8 @@ const Lesson = ({ lesson, onReset }) => {
           </section>
         )}
       </div>
+
+      <LessonChat lesson={lesson} />
     </div>
   );
 };
