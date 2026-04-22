@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './FileUpload.css';
+import { formatApiError } from '../utils/apiError';
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL ||
@@ -20,6 +21,11 @@ const modeCopy = {
     button: 'Create Lesson'
   }
 };
+
+const createErrorState = (message) => ({
+  variant: 'error',
+  message
+});
 
 const FileUpload = ({ onContentGenerated }) => {
   const [file, setFile] = useState(null);
@@ -59,7 +65,7 @@ const FileUpload = ({ onContentGenerated }) => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
 
     if (!allowedTypes.includes(selectedFile.type)) {
-      setError('Please upload a PDF or image file (JPEG, PNG, GIF)');
+      setError(createErrorState('Please upload a PDF or image file (JPEG, PNG, GIF)'));
       return;
     }
 
@@ -69,12 +75,12 @@ const FileUpload = ({ onContentGenerated }) => {
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file first');
+      setError(createErrorState('Please select a file first'));
       return;
     }
 
     if (!subject.trim()) {
-      setError('Please enter a subject or category for this material');
+      setError(createErrorState('Please enter a subject or category for this material'));
       return;
     }
 
@@ -127,8 +133,10 @@ const FileUpload = ({ onContentGenerated }) => {
       setMode('quiz');
     } catch (err) {
       setError(
-        err.response?.data?.error ||
-        'Failed to process file. Please make sure the server is running and your Gemini API key is configured.'
+        formatApiError(
+          err,
+          'Failed to process file. Please make sure the server is running and your Gemini API key is configured.'
+        )
       );
       console.error('Upload error:', err);
     } finally {
@@ -206,7 +214,12 @@ const FileUpload = ({ onContentGenerated }) => {
         </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className={`error-message ${error.variant === 'quota' ? 'warning-banner' : ''}`}>
+          {error.variant === 'quota' && <strong>Usage Limit Reached</strong>}
+          {error.message}
+        </div>
+      )}
 
       <button
         type="button"

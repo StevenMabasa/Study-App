@@ -12,11 +12,14 @@ cd C:\Users\steve\Desktop\Study_App
 Your `.env` file should be in the `server` folder with your Gemini API key:
 ```
 GEMINI_API_KEY=your-new-gemini-api-key
+GEMINI_GENERATION_MODEL=gemini-2.5-flash-lite
+GEMINI_CHAT_MODEL=gemini-2.5-flash-lite
 PORT=5000
 ```
 
 For production deployments:
 - Render backend: set `GEMINI_API_KEY` in the Render service environment variables.
+- Render backend: optional but recommended: set `GEMINI_GENERATION_MODEL=gemini-2.5-flash-lite` and `GEMINI_CHAT_MODEL=gemini-2.5-flash-lite` to reduce request pressure on the free tier.
 - Netlify frontend: do not add the Gemini key there. The frontend only needs `REACT_APP_API_URL` pointing at your Render backend URL.
 
 ## Step 3: Run the App

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import './LessonChat.css';
+import { formatApiError } from '../utils/apiError';
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL ||
@@ -15,14 +16,38 @@ function buildIntroMessage(lesson) {
   };
 }
 
+function buildChatLessonContext(lessonData) {
+  const sections = Array.isArray(lessonData?.sections) ? lessonData.sections : [];
+
+  return {
+    title: lessonData?.title || '',
+    overview: lessonData?.overview || '',
+    learningObjectives: Array.isArray(lessonData?.learningObjectives)
+      ? lessonData.learningObjectives.slice(0, 5)
+      : [],
+    sections: sections.slice(0, 4).map((section) => ({
+      heading: section?.heading || '',
+      explanation: section?.explanation || '',
+      keyPoints: Array.isArray(section?.keyPoints) ? section.keyPoints.slice(0, 4) : [],
+      example: section?.example || ''
+    })),
+    summary: lessonData?.summary || '',
+    studyTips: Array.isArray(lessonData?.studyTips) ? lessonData.studyTips.slice(0, 4) : [],
+    possibleMisconceptions: Array.isArray(lessonData?.possibleMisconceptions)
+      ? lessonData.possibleMisconceptions.slice(0, 4)
+      : []
+  };
+}
+
 const LessonChat = ({ lesson }) => {
   const [messages, setMessages] = useState(() => [buildIntroMessage(lesson)]);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const endRef = useRef(null);
 
   const lessonData = lesson?.lesson || {};
+  const lessonChatContext = buildChatLessonContext(lessonData);
   const sections = Array.isArray(lessonData.sections) ? lessonData.sections : [];
   const starterPrompts = [
     sections[0]?.heading ? `Explain "${sections[0].heading}" in simpler terms.` : 'Explain this lesson in simpler terms.',
@@ -33,7 +58,7 @@ const LessonChat = ({ lesson }) => {
   useEffect(() => {
     setMessages([buildIntroMessage(lesson)]);
     setDraft('');
-    setError('');
+    setError(null);
     setIsSending(false);
   }, [lesson]);
 
@@ -61,16 +86,16 @@ const LessonChat = ({ lesson }) => {
 
     setMessages((current) => [...current, userMessage]);
     setDraft('');
-    setError('');
+    setError(null);
     setIsSending(true);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/lesson-chat`, {
         question,
         subject: lesson?.subject || '',
-        lesson: lessonData,
+        lesson: lessonChatContext,
         extractedText: lesson?.extractedText || '',
-        history: nextHistory
+        history: nextHistory.slice(-4)
       });
 
       const reply = String(response.data?.reply || '').trim() || 'I could not generate a reply just yet.';
@@ -85,8 +110,10 @@ const LessonChat = ({ lesson }) => {
       ]);
     } catch (err) {
       setError(
-        err.response?.data?.error ||
-        'I ran into a problem answering that question. Please try again.'
+        formatApiError(
+          err,
+          'I ran into a problem answering that question. Please try again.'
+        )
       );
     } finally {
       setIsSending(false);
@@ -154,7 +181,12 @@ const LessonChat = ({ lesson }) => {
         <div ref={endRef}></div>
       </div>
 
-      {error && <div className="lesson-chat-error">{error}</div>}
+      {error && (
+        <div className={`lesson-chat-error ${error.variant === 'quota' ? 'warning-banner' : ''}`}>
+          {error.variant === 'quota' && <strong>Usage Limit Reached</strong>}
+          {error.message}
+        </div>
+      )}
 
       <form className="lesson-chat-form" onSubmit={handleSubmit}>
         <textarea
