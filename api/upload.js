@@ -90,6 +90,35 @@ function parseModelJson(responseText) {
   throw lastError || new Error('Model did not return valid JSON');
 }
 
+const TRUE_FALSE_START_INDEX = 10;
+
+const MULTIPLE_CHOICE_STYLE_PATTERNS = [
+  /^which\b/i,
+  /^what\b/i,
+  /^who\b/i,
+  /^when\b/i,
+  /^where\b/i,
+  /^why\b/i,
+  /^how\s+(many|much|long|often|do|does|did|can|could|would|will|is|are|was|were)\b/i,
+  /\bwhich of the following\b/i,
+  /\bselect the (best|correct)\b/i,
+  /\bchoose the (best|correct)\b/i
+];
+
+function assertTrueFalseQuestionFormat(questionText, questionNumber) {
+  const text = String(questionText || '').trim();
+
+  if (!text) {
+    return;
+  }
+
+  if (MULTIPLE_CHOICE_STYLE_PATTERNS.some((pattern) => pattern.test(text))) {
+    throw new Error(
+      `Question ${questionNumber} must be a true/false statement (a factual claim), not a multiple-choice-style question.`
+    );
+  }
+}
+
 const QUIZ_SCHEMA = {
   description: 'A list of study quiz questions.',
   type: SchemaType.ARRAY,
@@ -129,7 +158,7 @@ function normalizeQuizQuestions(parsed) {
 
   return questions.map((question, index) => {
     const questionNumber = index + 1;
-    const expectedType = index < 15 ? 'multiple_choice' : 'true_false';
+    const expectedType = index < TRUE_FALSE_START_INDEX ? 'multiple_choice' : 'true_false';
     const questionText = String(question?.question || '').trim();
     const rawOptions = Array.isArray(question?.options)
       ? question.options.map((option) => String(option || '').trim()).filter(Boolean)
@@ -152,6 +181,10 @@ function normalizeQuizQuestions(parsed) {
 
     if (!questionText) {
       throw new Error(`Question ${questionNumber} is missing question text.`);
+    }
+
+    if (expectedType === 'true_false') {
+      assertTrueFalseQuestionFormat(questionText, questionNumber);
     }
 
     if (expectedType === 'multiple_choice' && options.length !== 4) {
@@ -315,25 +348,32 @@ Subject/category:
 ${subject || 'Not provided'}
 
 Based on the following lecture content, create a quiz with EXACTLY 20 questions in this order:
-- Questions 1-15: multiple_choice questions
-- Questions 16-20: true_false questions
+- Questions 1-10: multiple_choice questions
+- Questions 11-20: true_false questions
 
 Return ONLY valid JSON. No markdown, no extra commentary.
 
 Format your response as a JSON array where each question is an object with these fields:
-- type: "multiple_choice" for questions 1-15, "true_false" for questions 16-20
+- type: "multiple_choice" for questions 1-10, "true_false" for questions 11-20
 - question: the question text
 - options: for "multiple_choice" provide exactly 4 answer choices as strings; for "true_false" provide exactly ["True","False"]
 - correctAnswer: for "multiple_choice" provide the integer index of the correct option from 0 to 3; for "true_false" provide 0 for True or 1 for False
 - acceptableAnswers: always []
 
 Rules:
-- Questions 1-15 must be multiple-choice. Questions 16-20 must be true/false.
+- Questions 1-10 must be multiple-choice. Questions 11-20 must be true/false.
 - Do not create short-answer, fill-in-the-blank, or open-ended questions.
 - Multiple-choice options must be exactly 4 strings in A, B, C, D order.
 - True/false options must be exactly ["True","False"] in that order.
 - Each question must have only one correct option.
 - Make the distractors plausible but clearly wrong based on the lecture content.
+
+True/false question rules (questions 11-20):
+- Write each question as one declarative statement about the lecture (a factual claim the student marks true or false).
+- Do not use multiple-choice wording such as "Which of the following", "What is", "Who", "When", "Where", "Why", "How many", "Select", or "Choose".
+- Do not list answer choices inside the question text.
+- Good example: "Photosynthesis converts light energy into chemical energy."
+- Bad example: "Which process converts light energy into chemical energy?"
 
 Lecture content:
 ${text.substring(0, 30000)}
