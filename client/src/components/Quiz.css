@@ -182,36 +182,6 @@
   gap: 15px;
 }
 
-.short-answer-container {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.short-answer-input {
-  width: 100%;
-  padding: 18px 18px;
-  border: 2px solid rgba(255, 138, 0, 0.22);
-  border-radius: 14px;
-  font-size: 1.05rem;
-  background: rgba(17, 24, 39, 0.72);
-  color: #e5e7eb;
-  font-family: 'JetBrains Mono', monospace;
-  outline: none;
-  box-shadow: 0 4px 15px rgba(255, 138, 0, 0.08);
-}
-
-.short-answer-input:focus {
-  border-color: #ffb347;
-  box-shadow: 0 0 0 4px rgba(255, 138, 0, 0.12);
-}
-
-.short-answer-hint {
-  color: #a9afbf;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
 .nav-button {
   padding: 15px 30px;
   border: none;

@@ -97,7 +97,7 @@ const QUIZ_SCHEMA = {
     properties: {
       type: {
         type: SchemaType.STRING,
-        description: 'Question type: multiple_choice, true_false, or short_answer.'
+        description: 'Question type. Always multiple_choice.'
       },
       question: {
         type: SchemaType.STRING,
@@ -105,19 +105,18 @@ const QUIZ_SCHEMA = {
       },
       options: {
         type: SchemaType.ARRAY,
-        description: 'Answer options when applicable.',
+        description: 'Exactly four answer options.',
         items: {
           type: SchemaType.STRING
         }
       },
       correctAnswer: {
         type: SchemaType.NUMBER,
-        nullable: true,
-        description: 'Correct option index for multiple-choice or true/false. Null for short answers.'
+        description: 'Correct option index from 0 to 3.'
       },
       acceptableAnswers: {
         type: SchemaType.ARRAY,
-        description: 'Accepted answers for short-answer questions.',
+        description: 'Always an empty array for multiple-choice questions.',
         items: {
           type: SchemaType.STRING
         }
@@ -126,6 +125,50 @@ const QUIZ_SCHEMA = {
     required: ['type', 'question', 'options', 'correctAnswer', 'acceptableAnswers']
   }
 };
+
+function normalizeQuizQuestions(parsed) {
+  const questions = Array.isArray(parsed)
+    ? parsed
+    : parsed && Array.isArray(parsed.questions)
+      ? parsed.questions
+      : null;
+
+  if (!questions) {
+    throw new Error('Unexpected quiz response format from model');
+  }
+
+  if (questions.length !== 20) {
+    throw new Error(`Expected 20 multiple-choice questions, received ${questions.length}.`);
+  }
+
+  return questions.map((question, index) => {
+    const questionText = String(question?.question || '').trim();
+    const options = Array.isArray(question?.options)
+      ? question.options.map((option) => String(option || '').trim()).filter(Boolean)
+      : [];
+    const correctAnswer = Number(question?.correctAnswer);
+
+    if (!questionText) {
+      throw new Error(`Question ${index + 1} is missing question text.`);
+    }
+
+    if (options.length !== 4) {
+      throw new Error(`Question ${index + 1} must have exactly 4 answer options.`);
+    }
+
+    if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
+      throw new Error(`Question ${index + 1} must have a correctAnswer index from 0 to 3.`);
+    }
+
+    return {
+      type: 'multiple_choice',
+      question: questionText,
+      options,
+      correctAnswer,
+      acceptableAnswers: []
+    };
+  });
+}
 
 const LESSON_SCHEMA = {
   type: SchemaType.OBJECT,
@@ -305,24 +348,22 @@ async function generateQuiz(text, subject = '') {
 Subject/category:
 ${subject || 'Not provided'}
 
-Based on the following lecture content, create a quiz with EXACTLY 20 questions, with this mix:
-- 10 multiple_choice questions
-- 5 true_false questions
-- 5 short_answer questions
+Based on the following lecture content, create a quiz with EXACTLY 20 multiple-choice questions.
 
 Return ONLY valid JSON. No markdown, no extra commentary.
 
 Format your response as a JSON array where each question is an object with these fields:
-- type: one of "multiple_choice", "true_false", "short_answer"
+- type: always "multiple_choice"
 - question: the question text
-- options: for "multiple_choice" and "true_false" provide options, otherwise []
-- correctAnswer: for "multiple_choice" provide an integer index 0-3, for "true_false" provide integer index 0-1, for "short_answer" set null
-- acceptableAnswers: for "short_answer" provide an array of 1-3 acceptable answers (strings). For other types use [].
+- options: exactly 4 answer choices as strings
+- correctAnswer: the integer index of the correct option, from 0 to 3
+- acceptableAnswers: always []
 
 Rules:
-- multiple_choice: options must be exactly 4 strings (A,B,C,D order). Only one correct option.
-- true_false: options must be exactly ["True","False"] in that order. Only one correct.
-- short_answer: options must be []. The correct answer should be concise. Provide acceptableAnswers for common correct variations.
+- Every question must be multiple-choice. Do not create true/false, short-answer, fill-in-the-blank, or open-ended questions.
+- Options must be exactly 4 strings in A, B, C, D order.
+- Each question must have only one correct option.
+- Make the distractors plausible but clearly wrong based on the lecture content.
 
 Lecture content:
 ${text.substring(0, 30000)}
@@ -331,9 +372,7 @@ Return ONLY the JSON array of 20 question objects.`;
 
     const parsed = await generateJsonResponse(prompt, 'quiz', QUIZ_SCHEMA, GENERATION_MODEL);
 
-    if (Array.isArray(parsed)) return parsed;
-    if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
-    throw new Error('Unexpected quiz response format from model');
+    return normalizeQuizQuestions(parsed);
   } catch (error) {
     throwGenerationError(error, 'quiz');
   }

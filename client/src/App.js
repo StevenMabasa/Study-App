@@ -38,29 +38,7 @@ function App() {
     setShowResults(true);
     setCurrentView('results');
 
-    const normalizeText = (value) => {
-      return String(value ?? '')
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, ' ');
-    };
-
     const isQuestionCorrect = (question, userAnswer) => {
-      const questionType = question.type || 'multiple_choice';
-
-      if (questionType === 'short_answer') {
-        const acceptable =
-          Array.isArray(question.acceptableAnswers) && question.acceptableAnswers.length
-            ? question.acceptableAnswers
-            : question.correctAnswer
-              ? [question.correctAnswer]
-              : [];
-
-        const normalizedUser = normalizeText(userAnswer);
-        if (!normalizedUser) return false;
-        return acceptable.some((answer) => normalizeText(answer) === normalizedUser);
-      }
-
       return userAnswer === question.correctAnswer;
     };
 
@@ -184,7 +162,7 @@ function App() {
   };
 
   const activeView = viewContent[currentView] || viewContent.upload;
-  const heroTags = ['Quiz generation', 'Guided lessons', 'Interactive tutor'];
+  const heroTags = ['Multiple-choice quizzes', 'Guided lessons', 'Interactive tutor'];
 
   let renderedContent = <FileUpload onContentGenerated={handleStudyContentGenerated} />;
 
