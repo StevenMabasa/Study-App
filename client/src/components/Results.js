@@ -5,30 +5,7 @@ const Results = ({ quiz, userAnswers, onReset, onViewPast }) => {
   const questions = quiz?.questions || [];
   const answers = userAnswers || {};
 
-  const normalizeText = (value) => {
-    return String(value ?? '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ' ');
-  };
-
   const isQuestionCorrect = (question, userAnswer) => {
-    const questionType = question.type || 'multiple_choice';
-
-    if (questionType === 'short_answer') {
-      const acceptable =
-        Array.isArray(question.acceptableAnswers) && question.acceptableAnswers.length
-          ? question.acceptableAnswers
-          : question.correctAnswer
-            ? [question.correctAnswer]
-            : [];
-
-      const normalizedUser = normalizeText(userAnswer);
-      if (!normalizedUser) return false;
-      return acceptable.some((a) => normalizeText(a) === normalizedUser);
-    }
-
-    // multiple_choice + true_false: userAnswer is the selected option index
     return userAnswer === question.correctAnswer;
   };
 
@@ -70,9 +47,9 @@ const Results = ({ quiz, userAnswers, onReset, onViewPast }) => {
             You got <strong>{score.correct}</strong> out of <strong>{score.total}</strong> questions correct!
           </p>
           {isPassing ? (
-            <p className="score-message passing-message">🎉 Great job! Keep up the good work!</p>
+            <p className="score-message passing-message">Great job. Keep up the good work!</p>
           ) : (
-            <p className="score-message failing-message">💪 Keep studying! Review the answers below.</p>
+            <p className="score-message failing-message">Keep studying. Review the answers below.</p>
           )}
         </div>
       </div>
@@ -83,62 +60,41 @@ const Results = ({ quiz, userAnswers, onReset, onViewPast }) => {
           const userAnswer = answers[index];
           const isCorrect = isQuestionCorrect(question, userAnswer);
           const optionLabel = (idx) => String.fromCharCode(65 + idx);
-          const questionType = question.type || 'multiple_choice';
+          const options = Array.isArray(question.options) ? question.options : [];
 
           return (
             <div key={index} className={`review-item ${isCorrect ? 'correct' : 'incorrect'}`}>
               <div className="review-header">
                 <span className="question-number">Question {index + 1}</span>
                 <span className={`status-badge ${isCorrect ? 'correct-badge' : 'incorrect-badge'}`}>
-                  {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                  {isCorrect ? 'Correct' : 'Incorrect'}
                 </span>
               </div>
-              
+
               <p className="review-question">{question.question}</p>
 
-              {questionType === 'short_answer' ? (
-                <div className="short-answer-review">
-                  <div className="short-answer-row">
-                    <span className="short-answer-label">Your answer:</span>
-                    <span
-                      className={`short-answer-value ${isCorrect ? 'short-answer-correct' : 'short-answer-incorrect'}`}
-                    >
-                      {typeof userAnswer === 'string' && userAnswer.trim() ? userAnswer : '—'}
-                    </span>
-                  </div>
-                  <div className="short-answer-row">
-                    <span className="short-answer-label">Correct answer:</span>
-                    <span className="short-answer-value">
-                      {Array.isArray(question.acceptableAnswers) && question.acceptableAnswers.length
-                        ? question.acceptableAnswers[0]
-                        : question.correctAnswer ?? '—'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="review-answers">
-                  {(question.options || []).map((option, optIndex) => {
-                    let optionClass = 'review-option';
-                    let label = '';
+              <div className="review-answers">
+                {options.map((option, optIndex) => {
+                  let optionClass = 'review-option';
+                  let label = '';
 
-                    if (optIndex === question.correctAnswer) {
-                      optionClass += ' correct-answer';
-                      label = '✓ Correct Answer';
-                    } else if (optIndex === userAnswer && !isCorrect) {
-                      optionClass += ' user-answer';
-                      label = 'Your Answer';
-                    }
+                  if (optIndex === question.correctAnswer) {
+                    optionClass += ' correct-answer';
+                    label = 'Correct Answer';
+                  } else if (optIndex === userAnswer && !isCorrect) {
+                    optionClass += ' user-answer';
+                    label = 'Your Answer';
+                  }
 
-                    return (
-                      <div key={optIndex} className={optionClass}>
-                        <span className="review-option-label">{optionLabel(optIndex)}</span>
-                        <span className="review-option-text">{option}</span>
-                        {label && <span className="review-option-badge">{label}</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                  return (
+                    <div key={optIndex} className={optionClass}>
+                      <span className="review-option-label">{optionLabel(optIndex)}</span>
+                      <span className="review-option-text">{option}</span>
+                      {label && <span className="review-option-badge">{label}</span>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -159,4 +115,3 @@ const Results = ({ quiz, userAnswers, onReset, onViewPast }) => {
 };
 
 export default Results;
-

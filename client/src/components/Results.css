@@ -207,37 +207,6 @@
   gap: 12px;
 }
 
-.short-answer-review {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.short-answer-row {
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-
-.short-answer-label {
-  font-weight: 700;
-  color: #b3b8c6;
-}
-
-.short-answer-value {
-  color: #e5e7eb;
-  font-weight: 600;
-}
-
-.short-answer-correct {
-  color: #ffb347;
-}
-
-.short-answer-incorrect {
-  color: #ffffff;
-}
-
 .review-option {
   display: flex;
   align-items: center;
