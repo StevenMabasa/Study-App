@@ -10,10 +10,10 @@ const API_BASE_URL =
 const modeCopy = {
   quiz: {
     title: 'Generate Quiz',
-    description: 'Create 15 multiple-choice questions and 5 true/false questions from your material.',
+    description: 'Create 10 multiple-choice questions and 10 true/false questions from your material.',
     loading: 'Extracting text and generating quiz questions...',
     button: 'Generate Quiz',
-    highlights: ['15 multiple-choice questions', '5 true/false questions', 'Instant scoring']
+    highlights: ['10 multiple-choice questions', '10 true/false questions', 'Instant scoring']
   },
   lesson: {
     title: 'Create Lesson',
