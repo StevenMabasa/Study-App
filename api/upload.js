@@ -124,30 +124,47 @@ function normalizeQuizQuestions(parsed) {
   }
 
   if (questions.length !== 20) {
-    throw new Error(`Expected 20 multiple-choice questions, received ${questions.length}.`);
+    throw new Error(`Expected 20 quiz questions, received ${questions.length}.`);
   }
 
   return questions.map((question, index) => {
+    const questionNumber = index + 1;
+    const expectedType = index < 15 ? 'multiple_choice' : 'true_false';
     const questionText = String(question?.question || '').trim();
-    const options = Array.isArray(question?.options)
+    const rawOptions = Array.isArray(question?.options)
       ? question.options.map((option) => String(option || '').trim()).filter(Boolean)
       : [];
-    const correctAnswer = Number(question?.correctAnswer);
+    const options = expectedType === 'true_false' ? ['True', 'False'] : rawOptions;
+    let correctAnswer;
+
+    if (expectedType === 'true_false') {
+      const normalizedAnswer = String(question?.correctAnswer ?? '').trim().toLowerCase();
+      if (normalizedAnswer === 'true') {
+        correctAnswer = 0;
+      } else if (normalizedAnswer === 'false') {
+        correctAnswer = 1;
+      } else {
+        correctAnswer = Number(question?.correctAnswer);
+      }
+    } else {
+      correctAnswer = Number(question?.correctAnswer);
+    }
 
     if (!questionText) {
-      throw new Error(`Question ${index + 1} is missing question text.`);
+      throw new Error(`Question ${questionNumber} is missing question text.`);
     }
 
-    if (options.length !== 4) {
-      throw new Error(`Question ${index + 1} must have exactly 4 answer options.`);
+    if (expectedType === 'multiple_choice' && options.length !== 4) {
+      throw new Error(`Question ${questionNumber} must have exactly 4 answer options.`);
     }
 
-    if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
-      throw new Error(`Question ${index + 1} must have a correctAnswer index from 0 to 3.`);
+    const maxAnswerIndex = expectedType === 'true_false' ? 1 : 3;
+    if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > maxAnswerIndex) {
+      throw new Error(`Question ${questionNumber} must have a correctAnswer index from 0 to ${maxAnswerIndex}.`);
     }
 
     return {
-      type: 'multiple_choice',
+      type: expectedType,
       question: questionText,
       options,
       correctAnswer,
@@ -297,27 +314,31 @@ async function generateQuiz(text, subject = '') {
 Subject/category:
 ${subject || 'Not provided'}
 
-Based on the following lecture content, create a quiz with EXACTLY 20 multiple-choice questions.
+Based on the following lecture content, create a quiz with EXACTLY 20 questions in this order:
+- Questions 1-15: multiple_choice questions
+- Questions 16-20: true_false questions
 
 Return ONLY valid JSON. No markdown, no extra commentary.
 
 Format your response as a JSON array where each question is an object with these fields:
-- type: always "multiple_choice"
+- type: "multiple_choice" for questions 1-15, "true_false" for questions 16-20
 - question: the question text
-- options: exactly 4 answer choices as strings
-- correctAnswer: the integer index of the correct option, from 0 to 3
+- options: for "multiple_choice" provide exactly 4 answer choices as strings; for "true_false" provide exactly ["True","False"]
+- correctAnswer: for "multiple_choice" provide the integer index of the correct option from 0 to 3; for "true_false" provide 0 for True or 1 for False
 - acceptableAnswers: always []
 
 Rules:
-- Every question must be multiple-choice. Do not create true/false, short-answer, fill-in-the-blank, or open-ended questions.
-- Options must be exactly 4 strings in A, B, C, D order.
+- Questions 1-15 must be multiple-choice. Questions 16-20 must be true/false.
+- Do not create short-answer, fill-in-the-blank, or open-ended questions.
+- Multiple-choice options must be exactly 4 strings in A, B, C, D order.
+- True/false options must be exactly ["True","False"] in that order.
 - Each question must have only one correct option.
 - Make the distractors plausible but clearly wrong based on the lecture content.
 
 Lecture content:
 ${text.substring(0, 30000)}
 
-Return ONLY the JSON array of 20 question objects.`;
+Return ONLY the JSON array of 20 question objects in the required order.`;
 
     const parsed = await generateJsonResponse(prompt, 'quiz', QUIZ_SCHEMA, GENERATION_MODEL);
 

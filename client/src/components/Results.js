@@ -1,5 +1,6 @@
 import React from 'react';
 import './Results.css';
+import { getQuestionOptions } from '../utils/questionOptions';
 
 const Results = ({ quiz, userAnswers, onReset, onViewPast }) => {
   const questions = quiz?.questions || [];
@@ -60,7 +61,7 @@ const Results = ({ quiz, userAnswers, onReset, onViewPast }) => {
           const userAnswer = answers[index];
           const isCorrect = isQuestionCorrect(question, userAnswer);
           const optionLabel = (idx) => String.fromCharCode(65 + idx);
-          const options = Array.isArray(question.options) ? question.options : [];
+          const options = getQuestionOptions(question, index);
 
           return (
             <div key={index} className={`review-item ${isCorrect ? 'correct' : 'incorrect'}`}>
