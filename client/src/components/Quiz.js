@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Quiz.css';
+import { getQuestionOptions } from '../utils/questionOptions';
 
 const Quiz = ({ questions = [], subject, onComplete, onReset }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -39,7 +40,7 @@ const Quiz = ({ questions = [], subject, onComplete, onReset }) => {
   }, 0);
 
   const currentAnswer = answers[currentQuestion];
-  const options = Array.isArray(question.options) ? question.options : [];
+  const options = getQuestionOptions(question, currentQuestion);
 
   return (
     <div className="quiz">

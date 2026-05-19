@@ -1,5 +1,6 @@
 import React from 'react';
 import './QuizReview.css';
+import { getQuestionOptions } from '../utils/questionOptions';
 
 const QuizReview = ({ quizRecord, onBack }) => {
   const { questions = [], userAnswers = {}, score, subject, timestamp } = quizRecord;
@@ -50,7 +51,7 @@ const QuizReview = ({ quizRecord, onBack }) => {
           const userAnswer = userAnswers[index];
           const isCorrect = isQuestionCorrect(question, userAnswer);
           const optionLabel = (idx) => String.fromCharCode(65 + idx);
-          const options = Array.isArray(question.options) ? question.options : [];
+          const options = getQuestionOptions(question, index);
 
           return (
             <div key={index} className={`review-question-item ${isCorrect ? 'correct' : 'incorrect'}`}>

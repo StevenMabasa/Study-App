@@ -162,7 +162,7 @@ function App() {
   };
 
   const activeView = viewContent[currentView] || viewContent.upload;
-  const heroTags = ['Multiple-choice quizzes', 'Guided lessons', 'Interactive tutor'];
+  const heroTags = ['Multiple-choice + true/false', 'Guided lessons', 'Interactive tutor'];
 
   let renderedContent = <FileUpload onContentGenerated={handleStudyContentGenerated} />;
 
